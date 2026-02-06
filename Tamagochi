@@ -1,0 +1,152 @@
+import time
+import threading
+import tkinter as tk
+from PIL import ImageTk, Image
+import customtkinter as ctk
+from tkinter import messagebox
+
+ctk.set_appearance_mode("Light")
+ctk.set_default_color_theme("blue")
+
+class TamagotchiApp(ctk.CTk):
+    def __init__(self):
+        super().__init__()
+        self.title("Тамагочи")
+        self.geometry("990x940")
+        self.resizable(False, False)
+
+        self.hunger = 50
+        self.happiness = 50
+        self.energy = 50
+        self.thirst = 50
+
+        self.label = ctk.CTkLabel(self, text="Ваш Тамагочи", font=("Arial", 20, "bold"))
+        self.label.pack(pady=12)
+
+        self.img = Image.open("retro-cartoon-creepy-tarantula-free-png (1).png")
+        self.new_width = 400
+        self.new_height = int((float(self.new_width) / self.img.size[0]) * float(self.img.size[1]))
+        self.resized_img = self.img.resize((self.new_width, self.new_height))
+        self.photo = ImageTk.PhotoImage(self.resized_img)
+
+        self.pict = ctk.CTkCanvas(self, width=self.new_width, height=self.new_height, highlightthickness=0)
+        self.pict.pack(pady=10)
+        self.pict.create_image(0, 0, anchor='nw', image=self.photo)
+
+        self.hunger_label = ctk.CTkLabel(self, text="Голод")
+        self.hunger_label.pack()
+        self.hunger_bar = ctk.CTkProgressBar(self, width=320, height=20)
+        self.hunger_bar.set(self.hunger / 100)
+        self.hunger_bar.pack(pady=6)
+
+        self.thirst_label = ctk.CTkLabel(self, text="Жажда")
+        self.thirst_label.pack()
+        self.thirst_bar = ctk.CTkProgressBar(self, width=320, height=20)
+        self.thirst_bar.set(self.thirst / 100)
+        self.thirst_bar.pack(pady=6)
+
+        self.happiness_label = ctk.CTkLabel(self, text="Счастье")
+        self.happiness_label.pack()
+        self.happiness_bar = ctk.CTkProgressBar(self, width=320, height=20)
+        self.happiness_bar.set(self.happiness / 100)
+        self.happiness_bar.pack(pady=6)
+
+        self.energy_label = ctk.CTkLabel(self, text="Энергия")
+        self.energy_label.pack()
+        self.energy_bar = ctk.CTkProgressBar(self, width=320, height=20)
+        self.energy_bar.set(self.energy / 100)
+        self.energy_bar.pack(pady=6)
+
+        btn_frame = ctk.CTkFrame(self)
+        btn_frame.pack(pady=12)
+
+        self.feed_btn = ctk.CTkButton(btn_frame, text="Кормить", command=self.feed)
+        self.feed_btn.grid(row=0, column=0, padx=8)
+
+
+        self.play_btn = ctk.CTkButton(btn_frame, text="Играть", command=self.play)
+        self.play_btn.grid(row=0, column=1, padx=8)
+
+        self.sleep_btn = ctk.CTkButton(btn_frame, text="Спать", command=self.sleep)
+        self.sleep_btn.grid(row=0, column=2, padx=8)
+
+        self.drink_btn = ctk.CTkButton(btn_frame, text="Напоить", command=self.feed)
+        self.drink_btn.grid(row=0, column=3, padx=8)
+
+        self.clean_btn = ctk.CTkButton(self, text="Чистить", command=self.clean)
+        self.clean_btn.pack(pady=6, padx=10)
+
+        self.reset_btn = ctk.CTkButton(self, text="Сброс", command=self.reset)
+        self.reset_btn.pack(pady=6, padx=10)
+
+        self.running = True
+        self.thread = threading.Thread(target=self.update_loop, daemon=True)
+        self.thread.start()
+
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
+
+    def feed(self):
+        self.hunger -= 15
+        self.energy += 5
+        self.happiness += 5
+        self.refresh_ui()
+
+    def play(self):
+        self.happiness += 10
+        self.energy -= 5
+        self.hunger += 3
+        self.thirst += 3
+        self.refresh_ui()
+
+    def sleep(self):
+        self.energy += 20
+        self.hunger += 5
+        self.happiness -= 2
+        self.thirst += 5
+        self.refresh_ui()
+
+    def drink(self):
+        self.thirst -= 15
+        self.refresh_ui()
+
+
+    def clean(self):
+        self.thirst += 5
+        self.refresh_ui()
+
+    def reset(self):
+        self.hunger = 50
+        self.happiness = 50
+        self.energy = 50
+        self.thirst = 50
+        self.refresh_ui()
+
+    def refresh_ui(self):
+        self.hunger_bar.set(max(min(self.hunger / 100, 1), 0))
+        self.happiness_bar.set(max(min(self.happiness / 100, 1), 0))
+        self.energy_bar.set(max(min(self.energy / 100, 1), 0))
+        self.thirst_bar.set(max(min(self.thirst / 100, 1), 0))
+        self.drink_bar.set(max(min(self.thirst / 100, 1), 0))
+
+    def update_loop(self):
+        while self.running:
+            time.sleep(1.5)
+            self.hunger = min(self.hunger + 1, 100)
+            self.happiness = max(self.happiness - 0.5, 0)
+            self.energy = max(self.energy - 0.4, 0)
+            self.thirst = min(self.thirst - 1, 100)
+            self.drink = min(self.drink + 0.5, 100)
+            self.after(0, self.refresh_ui)
+
+            if self.hunger >= 100 or self.happiness <= 40 or self.energy <= 20:
+                messagebox.showinfo("Игра окончена", "Ваш питомец погиб!")
+                self.running = False
+                break
+
+    def on_close(self):
+        self.running = False
+        self.destroy()
+
+if __name__ == "__main__":
+    app = TamagotchiApp()
+    app.mainloop()
